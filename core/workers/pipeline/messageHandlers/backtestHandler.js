@@ -2,7 +2,7 @@
 // all candles and trades, when done report them
 // all back at once
 
-const quantor = require("../../../quantorReport")
+const quantor = require("../../../quantor/report")
 
 module.exports = done => {
   var trades = [];

@@ -1,4 +1,4 @@
-let m = require("./quantorMethods")
+let m = require("./methods")
 
 module.exports = {
   trades: tradesList => {
