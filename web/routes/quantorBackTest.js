@@ -5,6 +5,11 @@ const quantorTest = require("../../core/quantor/test")
 const _ = require('lodash');
 const promisify = require('tiny-promisify');
 const pipelineRunner = promisify(require('../../core/workers/pipeline/parent'));
+const toml = require('toml');
+
+const format_date = function(line) {
+  return line.split(' ').join('T') + ":00Z"
+}
 
 // starts a backtest
 // requires a post body like:
@@ -18,16 +23,16 @@ const pipelineRunner = promisify(require('../../core/workers/pipeline/parent'));
 //     roundtrips: true
 //   }
 // }
+
 module.exports = function *() {
   var mode = 'backtest';
-
   var config = {};
-
   var base = require('./baseConfig');
 
   var req = this.request.body;
-
   var code = req.code
+  code = code.replace(/;\/rn;/g, "\r\n")
+  code = code.replace(/;\/t;/g, "\t")
 
   var testReport = quantorTest.perform(code, false)
 
@@ -37,8 +42,47 @@ module.exports = function *() {
   }
 
   var fileName = testReport.name
-
-  backtestReq = JSON.parse('{"gekkoConfig":{"watch":{"exchange":"gdax","currency":"USD","asset":"BTC"},"paperTrader":{"feeMaker":0.25,"feeTaker":0.25,"feeUsing":"maker","slippage":0.05,"simulationBalance":{"asset":1,"currency":100},"reportRoundtrips":true,"enabled":true},"tradingAdvisor":{"enabled":true,"method":"' + fileName + '","candleSize":60,"historySize":10},"' + fileName + '":{"short":10,"long":21,"signal":9,"thresholds":{"down":-0.025,"up":0.025,"persistence":1}},"backtest":{"daterange":{"from":"2017-01-01T00:35:00Z","to":"2017-02-21T17:35:00Z"}},"performanceAnalyzer":{"riskFreeReturn":2,"enabled":true},"valid":true},"data":{"candleProps":["close","start"],"indicatorResults":true,"report":true,"roundtrips":true,"trades":true}}')
+  var settings = toml.parse(req.settings)
+  var paper = toml.parse(req.paper)
+  paper.reportRoundtrips = true
+  paper.enabled = true
+  var fromTime = format_date(req.from)
+  var toTime = format_date(req.to)
+  var backtestReq = {
+    gekkoConfig: {
+      watch: {
+        exchange: req.exchange,
+        currency: req.currency,
+        asset: req.asset
+      },
+      paperTrader: paper,
+      tradingAdvisor: {
+        enabled: true,
+        method: fileName,
+        candleSize: req.candle_size,
+        historySize: 10
+      },
+      backtest: {
+        daterange: {
+          from: fromTime,
+          to: toTime
+        }
+      },
+      performanceAnalyzer: {
+        riskFreeReturn: 2,
+        enabled: true
+      },
+      valid: true
+    },
+    data: {
+      candleProps: [ "close", "start"],
+      indicatorResults: true,
+      report: true,
+      roundtrips: true,
+      trades: true
+    }
+  }
+  backtestReq.gekkoConfig[fileName] = settings
 
   _.merge(config, base, backtestReq.gekkoConfig);
 

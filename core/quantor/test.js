@@ -1,13 +1,13 @@
 const fs = require("fs")
 
-const allowed = [ '~lodash~', '~../core/log.js~', '~./indicators/RSI.js~', '~./indicators/TSI.js~', '~./indicators/UO.js~', '~../core/util~' ]
-const methods = [ 'init', 'log', 'check', 'update' ]
+const allowed = [ "'lodash'", "'../core/log.js'", "'./indicators/RSI.js'", "'./indicators/TSI.js'", "'./indicators/UO.js'", "'../core/util'" ]
+const methods = [ "init", "log", "check", "update" ]
 
 const checkRequireList = code => {
   var requireList = code.match(/require\(([^)]+)\)/g) || []
   requireList = requireList.map(entry => {
     entry = entry.replace(/require\(/g, "")
-    return entry.replace(/[)'"]+/g, "~")
+    return entry.replace(/[)'"]+/g, "'")
   })
   var stopRequireList = []
   requireList.forEach(entry => {
@@ -33,12 +33,12 @@ const checkJSModule = (code, test) => {
   }
   if (!codeModule) {
     removeFile(fileName)
-    return { error: "Failing JS module submitted" }
+    return { error: ["moduleFails", ""] }
   }
 
   if (typeof(codeModule) != "object") {
     removeFile(fileName)
-    return { error: "Module should export object" }
+    return { error: ["exportObject", ""] }
   }
 
   var stopMethodList = []
@@ -48,7 +48,7 @@ const checkJSModule = (code, test) => {
   })
   if (stopMethodList.length > 0) {
     removeFile(fileName)
-    return { forbiddenMethods: stopMethodList }
+    return { error: ["forbiddenMethods", stopMethodList.join(", ")] }
   }
 
   var missingMethods = []
@@ -57,7 +57,7 @@ const checkJSModule = (code, test) => {
   })
   if (missingMethods.length > 0) {
     removeFile(fileName)
-    return { missingMethods: missingMethods }
+    return { error: ["methodsMissing", missingMethods.join(", ")] }
   } 
 
   if (test) {
@@ -71,7 +71,7 @@ const checkJSModule = (code, test) => {
 module.exports = {
   perform: (code, test = true) => {
     stopRequireList = checkRequireList(code)
-    if (stopRequireList.length > 0) return { forbiddenRequires: stopRequireList }
+    if (stopRequireList.length > 0) return { error: ["forbiddenDeps", stopRequireList.join(", ")] }
     return checkJSModule(code, test)
   },
 

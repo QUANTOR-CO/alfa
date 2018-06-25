@@ -10,11 +10,17 @@ module.exports = {
     return report
   },
   roundtrips: roundtripsList => {
-    var report = []
+    var report = {
+      graph: [],
+      table: []
+    }
+    if (roundtripsList.length == 0) return report
     var start = roundtripsList[0]
-    report.push([m.time(start.entryAt), start.entryBalance ])
+    report.graph.push([m.time(start.entryAt), start.entryBalance ])
     roundtripsList.forEach( roundtrip => {
-      report.push([ m.time(roundtrip.exitAt),roundtrip.exitBalance ])
+      console.log(roundtrip)
+      report.graph.push([ m.time(roundtrip.exitAt),roundtrip.exitBalance ])
+      report.table.push([ m.tableTime(roundtrip.entryAt), m.tableTime(roundtrip.exitAt), roundtrip.duration, roundtrip.entryBalance, roundtrip.exitBalance, roundtrip.pnl, roundtrip.profit ])
     })
     return report
   }

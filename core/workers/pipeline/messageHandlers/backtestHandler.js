@@ -38,7 +38,10 @@ module.exports = done => {
           report: report,
           roundtrips: roundtrips
         }
-        var quantorReport = quantor.roundtrips(roundtrips)
+        var quantorReport = {
+          report: report
+        }
+        quantorReport.report.data = quantor.roundtrips(roundtrips)
         done(null, quantorReport);
     }
   }
